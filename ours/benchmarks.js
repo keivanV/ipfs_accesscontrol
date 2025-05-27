@@ -9,7 +9,7 @@ const { performance } = require('perf_hooks');
 // Configuration
 const CHANNEL_NAME = 'sipfs';
 const CHAINCODE_NAME = 'basic';
-const USERNAME = 'dd1'; // Data Owner username
+const USERNAME = 'test'; // Data Owner username
 const WALLET_PATH = path.join(__dirname, 'walletOwner');
 const CCP_PATH = path.resolve(
   __dirname,
@@ -67,13 +67,13 @@ function generateUniqueId(prefix) {
 
 // Attribute pools for random generation
 const ATTRIBUTE_POOLS = {
-  department: ['engineering', 'finance', 'hr', 'marketing', 'sales', 'it', 'research'],
-  role: ['developer', 'manager', 'analyst', 'designer', 'engineer', 'consultant', 'admin'],
-  location: ['us', 'eu', 'asia', 'africa', 'australia', 'south_america'],
-  skills: ['python', 'java', 'sql', 'javascript', 'cloud', 'devops', 'ai', 'blockchain'],
-  clearance: ['public', 'confidential', 'secret', 'top_secret'],
-  interest: ['tech', 'finance', 'health', 'education', 'sports', 'music', 'art'],
-  languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko']
+    department: ['engineering', 'finance', 'hr', 'marketing', 'sales', 'it', 'research', 'operations', 'legal', 'support', 'qa', 'product', 'logistics', 'training', 'compliance'],
+    role: ['developer', 'manager', 'analyst', 'designer', 'engineer', 'consultant', 'admin', 'director', 'specialist', 'coordinator', 'architect', 'tester', 'scientist', 'executive', 'trainer'],
+    location: ['us', 'eu', 'asia', 'africa', 'australia', 'south_america', 'canada', 'middle_east', 'india', 'japan', 'china', 'brazil', 'uk', 'germany', 'france'],
+    skills: ['python', 'java', 'sql', 'javascript', 'cloud', 'devops', 'ai', 'blockchain', 'cybersecurity', 'data_analysis', 'ml', 'networking', 'ui_ux', 'big_data', 'embedded'],
+    clearance: ['public', 'confidential', 'secret', 'top_secret', 'restricted', 'classified', 'sensitive', 'internal', 'external', 'executive'],
+    languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko', 'ar', 'hi', 'bn', 'sw', 'nl'],
+    interest: ['tech', 'finance', 'health', 'education', 'sports', 'music', 'art', 'science', 'travel', 'gaming', 'environment', 'politics', 'fashion', 'food', 'literature']
 };
 
 // Randomly select n items from an array
@@ -84,41 +84,72 @@ function getRandomSubset(array, n) {
 
 // Generate a single random policy attribute with varied keys
 function generateRandomPolicyAttribute() {
-  const numKeys = Math.floor(Math.random() * 3) + 2; // 2-4 keys per attribute
-  const availableKeys = Object.keys(ATTRIBUTE_POOLS);
-  const selectedKeys = getRandomSubset(availableKeys, numKeys);
-  const attribute = {};
-  
-  selectedKeys.forEach(key => {
-    const numValues = Math.floor(Math.random() * 2) + 1; // 1-2 values per key
-    attribute[key] = getRandomSubset(ATTRIBUTE_POOLS[key], numValues);
-  });
-  
-  return attribute;
+    const numKeys = Math.floor(Math.random() * 3) + 5; // 5-7 keys per attribute (was 3-5)
+    const availableKeys = Object.keys(ATTRIBUTE_POOLS);
+    const selectedKeys = getRandomSubset(availableKeys, numKeys);
+    const attribute = {};
+    
+    selectedKeys.forEach(key => {
+        const numValues = Math.floor(Math.random() * 6) + 5; // 5-10 values per key (was 3-7)
+        attribute[key] = getRandomSubset(ATTRIBUTE_POOLS[key], numValues);
+    });
+    
+    return attribute;
 }
+// Generate user PolicySet with diverse attributes (simple version)
+// function generateUserPolicySet(attributeCount, includeRequired = false) {
+//   const attributes = [];
+  
+//   // Required attributes for asset.policySet and promoteAttributes
+//   const requiredAttribute = {
+//     interest: ['department:engineering', 'role:developer'],
+//     languages: ['skills:python']
+//   };
+  
+//   // If includeRequired, add the required attribute
+//   if (includeRequired) {
+//     attributes.push(requiredAttribute);
+//   }
+  
+//   // Fill remaining attributes with random ones
+//   for (let i = attributes.length; i < attributeCount; i++) {
+//     attributes.push(generateRandomPolicyAttribute());
+//   }
+  
+//   // Shuffle to avoid predictable placement
+//   return JSON.stringify(attributes.sort(() => 0.5 - Math.random()));
+// }
 
-// Generate user PolicySet with diverse attributes
-function generateUserPolicySet(attributeCount, includeRequired = false) {
-  const attributes = [];
-  
-  // Required attributes for asset.policySet and promoteAttributes
-  const requiredAttribute = {
-    interest: ['department:engineering', 'role:developer'],
-    languages: ['skills:python']
-  };
-  
-  // If includeRequired, add the required attribute
-  if (includeRequired) {
-    attributes.push(requiredAttribute);
-  }
-  
-  // Fill remaining attributes with random ones
-  for (let i = attributes.length; i < attributeCount; i++) {
-    attributes.push(generateRandomPolicyAttribute());
-  }
-  
-  // Shuffle to avoid predictable placement
-  return JSON.stringify(attributes.sort(() => 0.5 - Math.random()));
+
+function generateUserPolicySet(attributeCount, includeRequired = false, requiredPolicies = []) {
+    const attributes = [];
+    
+    // Required policies for asset.policySet and promoteAttributes
+    const requiredPolicyOptions = requiredPolicies.length > 0 ? requiredPolicies : [
+        {
+            department: ['engineering', 'it'],
+            role: ['developer', 'admin'],
+            skills: ['python', 'cloud'],
+            clearance: ['confidential'],
+            location: ['us'],
+            languages: ['skills:python'], // Match promoteAttributes.languages
+            interest: ['department:engineering', 'role:developer'] // Match promoteAttributes.interest
+        }
+    ];
+    
+    // If includeRequired, add one random required policy
+    if (includeRequired && requiredPolicyOptions.length > 0) {
+        const randomIndex = Math.floor(Math.random() * requiredPolicyOptions.length);
+        attributes.push(requiredPolicyOptions[randomIndex]);
+    }
+    
+    // Fill remaining attributes with random complex ones
+    for (let i = attributes.length; i < attributeCount; i++) {
+        attributes.push(generateRandomPolicyAttribute());
+    }
+    
+    // Shuffle to avoid predictable placement
+    return JSON.stringify(attributes.sort(() => 0.5 - Math.random()));
 }
 
 function generateShamirFragments(secret, parts, quorum) {
@@ -857,12 +888,12 @@ async function benchmarkQueryLatency() {
     if (gateway) await gateway.disconnect();
   }
 }
-
 async function benchmarkPromoteDemote() {
   const results = [];
   let gateway = null;
   let contract = null;
   let testData = null;
+  const DELAY_MS = 100; // NEW: Named constant for delay
 
   try {
     console.log('Connecting to gateway...');
@@ -892,7 +923,8 @@ async function benchmarkPromoteDemote() {
         name: 'DemoteAccess',
         args: [userId, assetId, currentDate],
         isQuery: false,
-        description: 'Demote user access'
+        // UPDATED: Clarified description
+        description: 'Demote user access for an asset'
       }
     ];
 
@@ -904,11 +936,13 @@ async function benchmarkPromoteDemote() {
       console.log(`Benchmarking ${func.name}...`);
 
       if (func.name === 'DemoteAccess') {
+        // NEW: Check if user is already promoted
+        let asset;
         try {
-          await contract.submitTransaction('PromoteAccess', userId, assetId, currentDate);
-          console.log(`Pre-promoted user ${userId} for DemoteAccess testing`);
+          const assetResult = await contract.evaluateTransaction('ReadAsset', assetId);
+          asset = JSON.parse(assetResult.toString());
         } catch (error) {
-          console.error(`Error pre-promoting user ${userId} for DemoteAccess:`, error.message);
+          console.error(`Error reading asset ${assetId} for promotion check:`, error.message);
           results.push({
             function: func.name,
             description: func.description,
@@ -919,6 +953,38 @@ async function benchmarkPromoteDemote() {
           });
           continue;
         }
+
+        let promotedAccess = [];
+        if (asset.promotedAccess) {
+          try {
+            promotedAccess = Array.isArray(asset.promotedAccess)
+              ? asset.promotedAccess
+              : JSON.parse(asset.promotedAccess);
+          } catch (e) {
+            console.error(`Invalid promotedAccess format for asset ${assetId}:`, e.message);
+            promotedAccess = [];
+          }
+        }
+
+        if (!promotedAccess.some(access => access.username === userId)) {
+          try {
+            await contract.submitTransaction('PromoteAccess', userId, assetId, currentDate);
+            console.log(`Pre-promoted user ${userId} for DemoteAccess testing`);
+          } catch (error) {
+            console.error(`Error pre-promoting user ${userId} for DemoteAccess:`, error.message);
+            results.push({
+              function: func.name,
+              description: func.description,
+              avgLatency: -1,
+              latencyUnit: 'milliseconds',
+              successfulRuns: 0,
+              totalRuns
+            });
+            continue;
+          }
+        } else {
+          console.log(`User ${userId} already promoted for asset ${assetId}, proceeding with DemoteAccess`);
+        }
       }
 
       for (let i = 0; i < totalRuns; i++) {
@@ -926,6 +992,19 @@ async function benchmarkPromoteDemote() {
         if (outcome.duration >= 0) {
           totalTime += outcome.duration;
           successfulRuns++;
+        }
+        // NEW: Add detailed logging for PromoteAccess failures
+        if (func.name === 'PromoteAccess' && outcome.duration < 0) {
+          try {
+            const userResult = await contract.evaluateTransaction('GetUser', userId);
+            const assetResult = await contract.evaluateTransaction('ReadAsset', assetId);
+            const user = JSON.parse(userResult.toString());
+            const asset = JSON.parse(assetResult.toString());
+            console.log(`PromoteAccess failed - User PolicySet: ${JSON.stringify(user.PolicySet)}`);
+            console.log(`PromoteAccess failed - Asset promoteAttributes: ${JSON.stringify(asset.promoteAttributes)}`);
+          } catch (error) {
+            console.error(`Error fetching state for PromoteAccess failure:`, error.message);
+          }
         }
         if (func.name === 'PromoteAccess' && outcome.duration >= 0) {
           try {
@@ -942,7 +1021,7 @@ async function benchmarkPromoteDemote() {
             console.error(`Error re-promoting user ${userId} for DemoteAccess:`, error.message);
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, DELAY_MS)); // UPDATED: Use named constant
       }
 
       const avgLatency = successfulRuns > 0 ? (totalTime / successfulRuns).toFixed(3) : -1;
@@ -1113,16 +1192,16 @@ async function runAllBenchmarks() {
     const promoteDemoteResults = await benchmarkPromoteDemote();
     console.log('Promote/Demote Results:', JSON.stringify(promoteDemoteResults, null, 2));
 
-    console.log('Running promotion check by attribute count benchmark...');
-    const promotionCheckResults = await benchmarkPromotionCheckByAttributeCount();
-    console.log('Promotion Check by Attribute Count Results:', JSON.stringify(promotionCheckResults, null, 2));
+    // console.log('Running promotion check by attribute count benchmark...');
+    // const promotionCheckResults = await benchmarkPromotionCheckByAttributeCount();
+    // console.log('Promotion Check by Attribute Count Results:', JSON.stringify(promotionCheckResults, null, 2));
 
     return {
       // apiCallTimes: apiCallResults,
       // createAsset: createAssetResults,
       // queryLatency: queryLatencyResults,
       promoteDemote: promoteDemoteResults,
-      promotionCheckByAttributeCount: promotionCheckResults
+      // promotionCheckByAttributeCount: promotionCheckResults
     };
   } catch (error) {
     console.error('Error running benchmarks:', error.stack);
